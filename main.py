@@ -1,47 +1,55 @@
 import requests
 import selectorlib
+import smtplib, ssl
 import os
 import time
 import sqlite3
 
 
-
-URL = "https://programmer100.pythonanywhere.com/tours/"
+URL = "http://programmer100.pythonanywhere.com/tours/"
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
 connection = sqlite3.connect("data.db")
 
 
-def scrape(url):
-    """Scrape the page source from the URL"""
-    response = requests.get(url)
-    source =  response.text
-    return source
-def extract(source):
-    extractor = selectorlib.Extractor.from_yaml_file("extract.yaml")
-    value = extractor.extract(source)["tours"]
-    return value
+class Event:
+    def scrape(self, url):
+        """Scrape the page source from the URL"""
+        response = requests.get(url, headers=HEADERS)
+        source = response.text
+        return source
 
-def send_email():
-    print("Email sent")
-# Store to txt
-""" def store(extracted):
-    with open("data.txt", "a") as file:
-        file.write(extracted + "\n") """
+    def extract(self, source):
+        extractor = selectorlib.Extractor.from_yaml_file("extract.yaml")
+        value = extractor.extract(source)["tours"]
+        return value
+
+
+class Email:
+    def send(self, message):
+        """ host = "smtp.gmail.com"
+        port = 465
+
+        username = "app8flask@gmail.com"
+        password = "qyciukmocfaiarse"
+
+        receiver = "app8flask@gmail.com"
+        context = ssl.create_default_context()
+
+        with smtplib.SMTP_SSL(host, port, context=context) as server:
+            server.login(username, password)
+            server.sendmail(username, receiver, message) """
+        print("Email was sent!")
+
 
 def store(extracted):
     row = extracted.split(",")
     row = [item.strip() for item in row]
     cursor = connection.cursor()
-    cursor.execute("INSERT INTO events VALUES(?, ?, ?)", row)
+    cursor.execute("INSERT INTO events VALUES(?,?,?)", row)
     connection.commit()
 
-
-    #   read from file 
-""" def read(extracted):
-    with open ("data.txt", "r") as file:
-        return file.read() """
-
-# Read from db
 def read(extracted):
     row = extracted.split(",")
     row = [item.strip() for item in row]
@@ -50,20 +58,20 @@ def read(extracted):
     cursor.execute("SELECT * FROM events WHERE band=? AND city=? AND date=?", (band, city, date))
     rows = cursor.fetchall()
     print(rows)
-    return(rows)
+    return rows
 
-if __name__  == "__main__":
+
+if __name__ == "__main__":
     while True:
-        scraped = scrape(URL)
-        extracted = extract(scraped)
+        event = Event()
+        scraped = event.scrape(URL)
+        extracted = event.extract(scraped)
         print(extracted)
-        
-        
+
         if extracted != "No upcoming tours":
             row = read(extracted)
             if not row:
                 store(extracted)
-                send_email()
+                email= Email()
+                email.send(message="Hey, new event was found!")
         time.sleep(2)
-
-    
