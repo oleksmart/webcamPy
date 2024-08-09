@@ -20,10 +20,9 @@ connection.commit()
 
 
 
-""" cursor.execute("DELETE FROM events")
-
+#cursor.execute("DELETE FROM events")
 # Commit the changes to the database
-connection.commit() """
+#connection.commit() 
 
 
 
